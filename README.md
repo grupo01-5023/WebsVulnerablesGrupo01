@@ -1,6 +1,6 @@
 # WebsVulnerables - Laboratorio de Hacking Web y Exámenes CTF
 
-Bienvenido al repositorio **WebsVulnerables**. Este entorno está diseñado para la formación práctica, entrenamiento y evaluación de competencias en **ciberseguridad ofensiva y desarrollo web seguro (OWASP Top 10)**.
+Bienvenido al repositorio **WebsVulnerables**, Este entorno está diseñado para la formación práctica, entrenamiento y evaluación de competencias en **ciberseguridad ofensiva y desarrollo web seguro (OWASP Top 10)**.
 
 El proyecto implementa una arquitectura modular basada en **Docker** y **Docker Compose**, donde cada reto se ejecuta de forma aislada con su propio servidor web (Apache + PHP 8.2) y su base de datos relacional independiente (MySQL 8.0).
 
