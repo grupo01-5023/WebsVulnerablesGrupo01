@@ -1,0 +1,65 @@
+pipeline {
+ agent any
+
+ options {
+  timestamps()
+  buildDiscarder(logRotator(numToKeepStr: '10'))
+ }
+
+ environment {
+  REPO_URL = 'https://github.com/grupo01-5023/WebsVulnerablesGrupo01'
+  REPO_BRANCH = 'main'
+  SEMGREP_IMAGE = 'semgrep/semgrep:latest'
+ }
+
+ stages {
+  stage('Checkout') {
+   steps {
+    git url: env.REPO_URL, branch: env.REPO_BRANCH
+   }
+  }
+
+  stage('Semgrep') {
+   steps {
+    script {
+     // Jenkins corre en un contenedor: se comparte su volumen con el
+     // contenedor de Semgrep (--volumes-from) para que vea el workspace.
+     def rc = sh(returnStatus: true, script: '''
+      docker run --rm --volumes-from jenkins -w "$WORKSPACE" ${SEMGREP_IMAGE} \
+       semgrep scan \
+        --config p/php --config p/owasp-top-ten \
+        --metrics=off --exclude db_data \
+        --json-output=semgrep.json \
+        --sarif-output=semgrep.sarif \
+        --text-output=semgrep.txt \
+        --error --text .
+     ''')
+     // Con --error Semgrep devuelve 1 cuando hay hallazgos: el build queda
+UNSTABLE, no FAILED
+     if (rc == 1) {
+      unstable('Semgrep ha encontrado vulnerabilidades')
+     } else if (rc != 0) {
+      error("Semgrep ha fallado con código ${rc}")
+     }
+    }
+   }
+  }
+
+  stage('Informe') {
+   steps {
+    archiveArtifacts artifacts: 'semgrep.json,semgrep.sarif,semgrep.txt',
+fingerprint: true
+    recordIssues(
+     tools: [sarif(pattern: 'semgrep.sarif', id: 'semgrep', name: 'Semgrep')],
+     enabledForFailure: true
+    )
+   }
+  }
+ }
+
+ post {
+  always {
+   sh 'echo "Resumen:"; grep -A6 "Scan Summary" semgrep.txt || true'
+  }
+ }
+}
